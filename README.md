@@ -360,4 +360,4 @@ Untuk pertanyaan dan dukungan, hubungi tim development SMKN 31 Jakarta.
 
 ---
 
-**Made with ❤️ for SMKN 31 Jakarta**
+Developed by Utaaa @tsubametaa (https://github.com/tsubametaa)
