@@ -3,6 +3,17 @@ import type { NextConfig } from "next";
 const backendUrl = process.env.API_PROXY_TARGET || "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // Disable WebSocket HMR untuk development di VPS
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+      };
+    }
+    return config;
+  },
+
   async rewrites() {
     return [
       // Student routes
