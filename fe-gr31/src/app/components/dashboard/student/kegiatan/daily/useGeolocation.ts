@@ -249,13 +249,22 @@ export function useGeolocation(): GeolocationResult {
   }, []);
 
   const resolvePermissionDeniedMessage = useCallback(async (): Promise<string> => {
-    if (
-      typeof window !== "undefined" &&
-      !window.isSecureContext &&
-      window.location.hostname !== "localhost" &&
-      window.location.hostname !== "127.0.0.1"
-    ) {
-      return "Akses lokasi membutuhkan HTTPS. Buka aplikasi lewat https:// atau localhost.";
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname.toLowerCase();
+      const isLocalhost =
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "[::1]" ||
+        hostname.endsWith(".localhost");
+
+      // Geolocation requires HTTPS on non-localhost origins.
+      if (!isLocalhost && window.location.protocol !== "https:") {
+        return "Akses lokasi membutuhkan HTTPS. Buka aplikasi lewat https:// atau localhost.";
+      }
+
+      if (!window.isSecureContext) {
+        return "Situs sudah dibuka via HTTPS, tetapi browser mendeteksi konteks tidak aman. Buka langsung di browser utama (bukan in-app browser) lalu coba lagi.";
+      }
     }
 
     if (!navigator.permissions?.query) {
