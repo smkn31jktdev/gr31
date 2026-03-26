@@ -7,7 +7,7 @@ Frontend now uses centralized API config in `src/lib/config/api.ts`.
 ### Environment Base URL
 
 - Dev: `http://localhost:8080`
-- Prod: `https://api-gr31.smkn31jkt.sch.id`
+- Prod: `https://api.gr31.tech`
 
 Set environment from `.env.local` (copy from `.env.example`):
 

@@ -6,8 +6,8 @@ const nextConfig: NextConfig = {
   // Explicitly opt into Turbopack config presence (Next.js 16 requires this when webpack config exists)
   turbopack: {},
 
-  // Allow remote dev access from VPS public host for HMR websocket.
-  allowedDevOrigins: ["148.230.96.35"],
+  // Allow remote dev access from frontend domain for HMR websocket.
+  allowedDevOrigins: ["gr31.tech"],
 
   // Disable WebSocket HMR untuk development di VPS
   webpack: (config, { dev, isServer }) => {

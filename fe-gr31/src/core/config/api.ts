@@ -1,6 +1,6 @@
 // API Configuration
 const _devBaseUrl = "http://localhost:8000";
-const _prodBaseUrl = "https://api-gr31.smkn31jkt.sch.id";
+const _prodBaseUrl = "https://api.gr31.tech";
 
 const envIsDevelopment = process.env.NEXT_PUBLIC_IS_DEVELOPMENT;
 export const isDevelopment = envIsDevelopment
