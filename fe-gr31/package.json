@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:vps": "next dev -H 0.0.0.0 -p 3000",
+    "dev:vps": "set -a && . ./.env.production && set +a && next dev -H 0.0.0.0 -p 3000",
     "build": "next build",
+    "build:vps": "set -a && . ./.env.production && set +a && next build",
     "start": "next start",
+    "start:vps": "set -a && . ./.env.production && set +a && next start -H 0.0.0.0 -p 3000",
     "lint": "eslint"
   },
   "dependencies": {

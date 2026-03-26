@@ -15,7 +15,7 @@ const getBackendUrlFromEnv = (): string => {
     return "http://localhost:8000";
   }
 
-  return "https://api-gr31.smkn31jkt.sch.id";
+  return "https://api.gr31.tech";
 };
 
 export const API_CONFIG = {
