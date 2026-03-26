@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/core/config/api.config";
 
-const backendUrl =
-  process.env.BACKEND_URL || "http://localhost:8000";
+const backendUrl = getBackendUrl();
 
 function getForwardAuthHeader(request: NextRequest): string | null {
   const raw = request.headers.get("authorization")?.trim() || "";
@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
     }
     if (authHeader) {
       headers["Authorization"] = authHeader;
-      console.log("[api/student/kegiatan] GET - Forwarding auth header:", authHeader.substring(0, 20) + "...");
+      console.log(
+        "[api/student/kegiatan] GET - Forwarding auth header:",
+        authHeader.substring(0, 20) + "...",
+      );
     } else {
       console.warn("[api/student/kegiatan] GET - No auth header found!");
     }
@@ -43,7 +46,10 @@ export async function GET(request: NextRequest) {
       headers,
     });
 
-    console.log("[api/student/kegiatan] GET - Response status:", response.status);
+    console.log(
+      "[api/student/kegiatan] GET - Response status:",
+      response.status,
+    );
 
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
@@ -71,7 +77,10 @@ export async function POST(request: NextRequest) {
     }
     if (authHeader) {
       headers["Authorization"] = authHeader;
-      console.log("[api/student/kegiatan] POST - Forwarding auth header:", authHeader.substring(0, 20) + "...");
+      console.log(
+        "[api/student/kegiatan] POST - Forwarding auth header:",
+        authHeader.substring(0, 20) + "...",
+      );
     } else {
       console.warn("[api/student/kegiatan] POST - No auth header found!");
     }
@@ -85,7 +94,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    console.log("[api/student/kegiatan] POST - Response status:", response.status);
+    console.log(
+      "[api/student/kegiatan] POST - Response status:",
+      response.status,
+    );
 
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
@@ -113,7 +125,10 @@ export async function PUT(request: NextRequest) {
     }
     if (authHeader) {
       headers["Authorization"] = authHeader;
-      console.log("[api/student/kegiatan] PUT - Forwarding auth header:", authHeader.substring(0, 20) + "...");
+      console.log(
+        "[api/student/kegiatan] PUT - Forwarding auth header:",
+        authHeader.substring(0, 20) + "...",
+      );
     } else {
       console.warn("[api/student/kegiatan] PUT - No auth header found!");
     }
@@ -127,7 +142,10 @@ export async function PUT(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    console.log("[api/student/kegiatan] PUT - Response status:", response.status);
+    console.log(
+      "[api/student/kegiatan] PUT - Response status:",
+      response.status,
+    );
 
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });
@@ -159,7 +177,10 @@ export async function DELETE(request: NextRequest) {
     }
     if (authHeader) {
       headers["Authorization"] = authHeader;
-      console.log("[api/student/kegiatan] DELETE - Forwarding auth header:", authHeader.substring(0, 20) + "...");
+      console.log(
+        "[api/student/kegiatan] DELETE - Forwarding auth header:",
+        authHeader.substring(0, 20) + "...",
+      );
     } else {
       console.warn("[api/student/kegiatan] DELETE - No auth header found!");
     }
@@ -172,7 +193,10 @@ export async function DELETE(request: NextRequest) {
       headers,
     });
 
-    console.log("[api/student/kegiatan] DELETE - Response status:", response.status);
+    console.log(
+      "[api/student/kegiatan] DELETE - Response status:",
+      response.status,
+    );
 
     const data = await response.json().catch(() => ({}));
     return NextResponse.json(data, { status: response.status });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/core/config/api.config";
 
-const backendUrl =
-  process.env.BACKEND_URL || "http://localhost:8000";
+const backendUrl = getBackendUrl();
 
 export async function GET(request: NextRequest) {
   const cookieHeader = request.headers.get("cookie");

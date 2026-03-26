@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/core/config/api.config";
 
-const backendUrl =
-  process.env.API_PROXY_TARGET || "http://localhost:8000";
+const backendUrl = getBackendUrl();
 
 const INDICATOR_DEFINITIONS = [
   { id: "bangunPagi", label: "Bangun Pagi" },
@@ -22,7 +22,8 @@ function computeRating(section: Record<string, unknown> | undefined): number {
   let filled = 0;
   for (const v of values) {
     if (v === true) filled++;
-    else if (typeof v === "string" && v.trim() !== "" && v !== "00:00") filled++;
+    else if (typeof v === "string" && v.trim() !== "" && v !== "00:00")
+      filled++;
     else if (typeof v === "number" && v > 0) filled++;
   }
 
@@ -47,8 +48,18 @@ function computeNote(section: Record<string, unknown> | undefined): string {
 function getMonthLabel(monthKey: string): string {
   const [yearStr, monthStr] = monthKey.split("-");
   const monthNames = [
-    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-    "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
   const monthIndex = parseInt(monthStr, 10) - 1;
   return `${monthNames[monthIndex]} ${yearStr}`;
@@ -113,7 +124,10 @@ function buildSummaries(
       const sectionData = row[def.id] as Record<string, unknown> | undefined;
       const rating = computeRating(sectionData);
       if (rating > 0) {
-        const acc = entry.sectionAccum.get(def.id) ?? { totalRating: 0, count: 0 };
+        const acc = entry.sectionAccum.get(def.id) ?? {
+          totalRating: 0,
+          count: 0,
+        };
         acc.totalRating += rating;
         acc.count += 1;
         entry.sectionAccum.set(def.id, acc);
@@ -132,7 +146,9 @@ function buildSummaries(
         label: def.label,
         rating: avgRating,
         note: computeNote(
-          avgRating > 0 ? ({ _r: avgRating } as unknown as Record<string, unknown>) : undefined,
+          avgRating > 0
+            ? ({ _r: avgRating } as unknown as Record<string, unknown>)
+            : undefined,
         ),
       };
     });
@@ -175,7 +191,8 @@ export async function GET(request: NextRequest) {
   try {
     const now = new Date();
     const targetMonth =
-      requestedMonth || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      requestedMonth ||
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     const [yearStr, monthStr] = targetMonth.split("-");
     const year = parseInt(yearStr, 10);
@@ -203,12 +220,20 @@ export async function GET(request: NextRequest) {
     if (!backendResponse.ok) {
       const errorData = await backendResponse.json().catch(() => ({}));
       return NextResponse.json(
-        { success: false, error: (errorData as { error?: string }).error || "Gagal memuat data kegiatan" },
+        {
+          success: false,
+          error:
+            (errorData as { error?: string }).error ||
+            "Gagal memuat data kegiatan",
+        },
         { status: backendResponse.status },
       );
     }
 
-    const rawData = await backendResponse.json() as { data?: RawKegiatanRow[]; total?: number };
+    const rawData = (await backendResponse.json()) as {
+      data?: RawKegiatanRow[];
+      total?: number;
+    };
     const rows: RawKegiatanRow[] = rawData.data || [];
 
     // Build summaries

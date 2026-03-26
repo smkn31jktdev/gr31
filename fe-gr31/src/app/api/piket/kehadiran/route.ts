@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/core/config/api.config";
 
-const backendUrl = process.env.API_PROXY_TARGET || "http://localhost:8000";
+const backendUrl = getBackendUrl();
 
 function normalizeAuthorizationHeader(raw: string | null): string {
   if (!raw) return "";

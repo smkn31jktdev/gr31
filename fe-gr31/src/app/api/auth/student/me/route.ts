@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendUrl } from "@/core/config/api.config";
 
-const backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
+const backendUrl = getBackendUrl();
 
 function getForwardAuthHeader(request: NextRequest): string | null {
   const raw = request.headers.get("authorization")?.trim() || "";
