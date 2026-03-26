@@ -27,7 +27,7 @@ SMKN 31 Jakarta.
 
 ---
 
-GR31 Backend - Student Monitoring System API
+GR31 Frontend - Student Monitoring System
 Sistem Monitoring 7 Kebiasaan Anak Indonesia Hebat
 
 Developed for: SMKN 31 Jakarta
@@ -35,5 +35,5 @@ Developed by: Alvin (Utaaa)
 GitHub: https://github.com/tsubametaa
 Website: https://www.utaaa.my.id
 
-Backend API built with Golang Fiber for monitoring student activities.
+Frontend application built with Next.js for monitoring student activities.
 This software is proprietary and exclusively for SMKN 31 Jakarta.

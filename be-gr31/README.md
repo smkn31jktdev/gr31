@@ -264,4 +264,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Author
 
-Moch Dieqy Dzulqaidar
+Alvin (Utaaa)
+
+- GitHub: [@tsubametaa](https://github.com/tsubametaa)
+- Website: [www.utaaa.my.id](https://www.utaaa.my.id)

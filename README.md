@@ -340,19 +340,31 @@ vercel --prod
 
 ## Contributing
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+This is a proprietary software exclusively for SMKN 31 Jakarta.
+External contributions are not accepted.
+
+For internal development:
+
+1. Create feature branch (`git checkout -b feature/AmazingFeature`)
+2. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+3. Push to branch (`git push origin feature/AmazingFeature`)
+4. Open Pull Request for review
 
 ## License
 
-MIT License - see [LICENSE](be-gr31/LICENSE) file
+Proprietary License - see [LICENSE](LICENSE) file for details.
+
+**IMPORTANT**: This software is proprietary and exclusively owned by SMKN 31 Jakarta.
+Unauthorized use, reproduction, or distribution is strictly prohibited.
 
 ## Team
 
 SMKN 31 Jakarta Development Team
+
+**Lead Developer**: Alvin (Utaaa)
+
+- GitHub: [@tsubametaa](https://github.com/tsubametaa)
+- Website: [www.utaaa.my.id](https://www.utaaa.my.id)
 
 ## Support
 
@@ -360,4 +372,5 @@ Untuk pertanyaan dan dukungan, hubungi tim development SMKN 31 Jakarta.
 
 ---
 
-Developed by Utaaa @tsubametaa (https://github.com/tsubametaa)
+**Made with ❤️ for SMKN 31 Jakarta**
+**© 2026 SMKN 31 Jakarta. All Rights Reserved.**
