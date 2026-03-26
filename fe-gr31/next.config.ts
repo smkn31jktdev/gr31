@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const backendUrl = process.env.API_PROXY_TARGET || "http://localhost:8000";
 
 const nextConfig: NextConfig = {
+  // Explicitly opt into Turbopack config presence (Next.js 16 requires this when webpack config exists)
+  turbopack: {},
+
+  // Allow remote dev access from VPS public host for HMR websocket.
+  allowedDevOrigins: ["148.230.96.35"],
+
   // Disable WebSocket HMR untuk development di VPS
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
