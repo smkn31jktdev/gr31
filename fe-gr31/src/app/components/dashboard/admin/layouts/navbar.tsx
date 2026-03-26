@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Menu, User, LayoutDashboard, Wrench, LogOut } from "lucide-react";
+import { baseUrl } from "@/core/config";
 
 interface AdminNavbarProps {
   onToggleSidebar?: () => void;
@@ -11,9 +12,11 @@ interface AdminNavbarProps {
 function resolvePhotoUrl(url?: string | null): string | null {
   if (!url) return null;
   if (/^https?:\/\//i.test(url)) return url;
-  // Gunakan proxy Next.js untuk uploads
-  if (url.startsWith("/uploads/")) return `/api${url}`;
-  return url.startsWith("/") ? `/api${url}` : `/api/${url}`;
+  // Dukungan path lama yang sempat disimpan sebagai /api/uploads/...
+  if (url.startsWith("/api/")) {
+    return `${baseUrl}${url.replace(/^\/api/, "")}`;
+  }
+  return `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
 export default function AdminNavbar({

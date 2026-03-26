@@ -5,6 +5,9 @@ import type { MessageState } from "../types";
 function resolvePhotoUrl(url?: string | null): string | null {
   if (!url) return null;
   if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/api/")) {
+    return `${baseUrl}${url.replace(/^\/api/, "")}`;
+  }
   return `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
