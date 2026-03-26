@@ -248,6 +248,39 @@ export function useGeolocation(): GeolocationResult {
     return () => window.removeEventListener("resize", detectDevTools);
   }, []);
 
+  const resolvePermissionDeniedMessage = useCallback(async (): Promise<string> => {
+    if (
+      typeof window !== "undefined" &&
+      !window.isSecureContext &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+    ) {
+      return "Akses lokasi membutuhkan HTTPS. Buka aplikasi lewat https:// atau localhost.";
+    }
+
+    if (!navigator.permissions?.query) {
+      return "Akses lokasi gagal. Pastikan layanan lokasi (GPS) perangkat aktif dan izin browser sudah diberikan.";
+    }
+
+    try {
+      const permission = await navigator.permissions.query({
+        name: "geolocation",
+      });
+
+      if (permission.state === "denied") {
+        return "Izin lokasi diblokir di browser. Aktifkan izin lokasi untuk situs ini lalu coba lagi.";
+      }
+
+      if (permission.state === "granted") {
+        return "Izin browser sudah aktif, tetapi perangkat belum mengirim lokasi. Aktifkan layanan lokasi (GPS) dan coba lagi.";
+      }
+
+      return "Akses lokasi belum diizinkan. Izinkan akses lokasi di browser untuk melanjutkan.";
+    } catch {
+      return "Akses lokasi gagal. Pastikan layanan lokasi (GPS) perangkat aktif dan izin browser sudah diberikan.";
+    }
+  }, []);
+
   const verifyLocation = useCallback(() => {
     const lock = getActiveFakeGPSLock();
     if (lock) {
@@ -348,9 +381,9 @@ export function useGeolocation(): GeolocationResult {
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
-          setLocationMessage(
-            "Izin akses lokasi ditolak. Aktifkan GPS dan beri izin browser.",
-          );
+          void resolvePermissionDeniedMessage().then((message) => {
+            setLocationMessage(message);
+          });
         } else {
           setLocationMessage(
             "Gagal mendapatkan lokasi Anda. Pastikan sinyal GPS optimal.",
@@ -361,7 +394,7 @@ export function useGeolocation(): GeolocationResult {
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
-  }, [applyFakeGPSLock, isDevToolsOpen]);
+  }, [applyFakeGPSLock, isDevToolsOpen, resolvePermissionDeniedMessage]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
