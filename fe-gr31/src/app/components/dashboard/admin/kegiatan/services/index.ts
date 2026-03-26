@@ -1,0 +1,1 @@
+export { fetchMonitoringData } from "./kegiatanService";

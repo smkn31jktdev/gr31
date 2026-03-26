@@ -1,0 +1,1 @@
+export { downloadMakanSehatStyledPdf } from "./makanReport";

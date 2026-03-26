@@ -1,0 +1,1 @@
+export { downloadBelajarStyledPdf } from "./belajarReport";

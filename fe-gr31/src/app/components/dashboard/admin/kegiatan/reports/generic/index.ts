@@ -1,0 +1,1 @@
+export { downloadPdfReport } from "./genericReport";

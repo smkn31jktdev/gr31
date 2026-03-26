@@ -1,0 +1,456 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import {
+  LayoutDashboard,
+  LaptopMinimal,
+  Wrench,
+  ChevronDown,
+  X,
+  UserPlus,
+  FileText,
+  FileSpreadsheet,
+  Eraser,
+  MessageCircleQuestion,
+} from "lucide-react";
+
+const menuItems = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    href: "/page/admin",
+    hasSubmenu: false,
+  },
+  {
+    id: "rekap-data",
+    label: "Rekap Data",
+    icon: FileSpreadsheet,
+    href: "/page/admin/sheets",
+    hasSubmenu: false,
+  },
+  {
+    id: "monitoring",
+    label: "Monitoring",
+    icon: LaptopMinimal,
+    href: "/page/admin/kegiatan",
+    hasSubmenu: true,
+    submenu: [
+      {
+        label: "Bangun Pagi",
+        href: "/page/admin/kegiatan?tab=bangun",
+        queryParam: "bangun",
+      },
+      {
+        label: "Beribadah",
+        href: "/page/admin/kegiatan?tab=beribadah",
+        queryParam: "beribadah",
+      },
+      {
+        label: "Makan Sehat",
+        href: "/page/admin/kegiatan?tab=makan",
+        queryParam: "makan",
+      },
+      {
+        label: "Olahraga",
+        href: "/page/admin/kegiatan?tab=olahraga",
+        queryParam: "olahraga",
+      },
+      {
+        label: "Belajar",
+        href: "/page/admin/kegiatan?tab=belajar",
+        queryParam: "belajar",
+      },
+      {
+        label: "Bermasyarakat",
+        href: "/page/admin/kegiatan?tab=bermasyarakat",
+        queryParam: "bermasyarakat",
+      },
+      {
+        label: "Tidur Cukup",
+        href: "/page/admin/kegiatan?tab=tidur",
+        queryParam: "tidur",
+      },
+    ],
+  },
+  {
+    id: "bukti-kegiatan",
+    label: "Bukti Kegiatan",
+    icon: FileText,
+    href: "/page/admin/bukti",
+    hasSubmenu: false,
+  },
+  {
+    id: "user-profile",
+    label: "Atur User",
+    icon: UserPlus,
+    href: "/page/admin/user",
+    hasSubmenu: true,
+    submenu: [
+      { label: "Tambahkan Admin", href: "/page/admin/tambah-admin" },
+      { label: "Sheets Tambah Admin", href: "/page/admin/tambah-admin/sheets" },
+      { label: "Tambahkan Siswa", href: "/page/admin/tambah-siswa" },
+      { label: "Sheets Tambah Siswa", href: "/page/admin/tambah-siswa/sheets" },
+      { label: "Edit Siswa", href: "/page/admin/edit-siswa" },
+      { label: "Edit Admin", href: "/page/admin/edit-admin" },
+    ],
+  },
+  {
+    id: "aduan-siswa",
+    label: "Aduan Siswa",
+    icon: MessageCircleQuestion,
+    href: "/page/admin/chat",
+    hasSubmenu: false,
+  },
+  {
+    id: "settings",
+    label: "Pengaturan Akun",
+    icon: Wrench,
+    href: "/page/admin/settings",
+    hasSubmenu: false,
+  },
+  {
+    id: "clear-data",
+    label: "Hapus Data",
+    icon: Eraser,
+    href: "/page/admin/delete",
+    hasSubmenu: false,
+  },
+];
+
+interface AdminSidebarProps {
+  isCollapsed?: boolean;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function AdminSidebar({
+  isCollapsed = false,
+  isMobileOpen = false,
+  onMobileClose,
+}: AdminSidebarProps) {
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+
+    if (isLeftSwipe && isMobileOpen && onMobileClose) {
+      onMobileClose();
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileOpen && onMobileClose) {
+        const sidebar = document.getElementById("mobile-sidebar");
+        if (sidebar && !sidebar.contains(event.target as Node)) {
+          onMobileClose();
+        }
+      }
+    };
+
+    if (isMobileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileOpen, onMobileClose]);
+
+  const toggleMenu = (menuId: string) => {
+    if (isCollapsed) return;
+    setOpenMenus((prev) =>
+      prev.includes(menuId)
+        ? prev.filter((id) => id !== menuId)
+        : [...prev, menuId],
+    );
+  };
+
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (!pathname) return;
+
+    menuItems.forEach((item) => {
+      if (item.hasSubmenu && item.submenu) {
+        // If the item itself resolves exactly to pathname or starts with its subitems
+        const match = item.submenu.some(
+          (si) =>
+            pathname === si.href.split("?")[0] ||
+            pathname.startsWith(si.href.split("?")[0]),
+        );
+        if (match) {
+          setOpenMenus((prev) => {
+            if (!prev.includes(item.id)) return [...prev, item.id];
+            return prev;
+          });
+        }
+      }
+    });
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("adminToken");
+    if (!token) {
+      setIsSuperAdmin(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/admin/me", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (!res.ok) {
+          setIsSuperAdmin(false);
+          return;
+        }
+        const data = await res.json();
+        if (data?.user?.email === "smkn31jktdev@gmail.com") {
+          setIsSuperAdmin(true);
+        } else {
+          setIsSuperAdmin(false);
+        }
+      } catch {
+        setIsSuperAdmin(false);
+      }
+    })();
+  }, []);
+
+  const isActive = (href: string) => {
+    if (!pathname) return false;
+    const pureHref = href.split("?")[0];
+    if (pureHref === "/page/admin") {
+      return pathname === pureHref;
+    }
+    return pathname === pureHref || pathname.startsWith(pureHref + "/");
+  };
+
+  const renderMenuItem = (item: (typeof menuItems)[0]) => {
+    const isOpen = openMenus.includes(item.id);
+    const Icon = item.icon;
+    const active = !item.hasSubmenu && isActive(item.href);
+    const hasActiveChild =
+      item.hasSubmenu &&
+      item.submenu?.some((sub) => pathname?.startsWith(sub.href));
+
+    return (
+      <div key={item.id} className="mb-1">
+        <div
+          onClick={() => (item.hasSubmenu ? toggleMenu(item.id) : null)}
+          className={`flex items-center gap-4 px-4 py-3 cursor-pointer rounded-2xl transition-all duration-300 relative overflow-hidden group ${
+            active || (hasActiveChild && isCollapsed)
+              ? "bg-[var(--secondary)] text-white shadow-lg shadow-[var(--secondary)]/20"
+              : "text-gray-500 hover:bg-gray-50 hover:text-[var(--secondary)]"
+          }`}
+          title={isCollapsed ? item.label : undefined}
+        >
+          <Link
+            href={item.hasSubmenu ? "#" : item.href}
+            className="flex items-center flex-1 gap-4"
+            onClick={(e) => {
+              if (item.hasSubmenu) e.preventDefault();
+            }}
+          >
+            <Icon
+              className={`w-[22px] h-[22px] flex-shrink-0 transition-transform duration-300 ${
+                active || (hasActiveChild && isCollapsed)
+                  ? "scale-110"
+                  : "group-hover:scale-110"
+              }`}
+              strokeWidth={active ? 2.5 : 2}
+            />
+
+            {!isCollapsed && (
+              <span className={`font-semibold tracking-wide flex-1 truncate`}>
+                {item.label}
+              </span>
+            )}
+          </Link>
+
+          {item.hasSubmenu && !isCollapsed && (
+            <div
+              className={`transition-transform duration-300 ${
+                isOpen ? "rotate-180" : ""
+              } ${
+                active || hasActiveChild
+                  ? "text-white/80"
+                  : "text-gray-400 group-hover:text-[var(--secondary)]"
+              }`}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </div>
+          )}
+        </div>
+
+        {item.hasSubmenu && isOpen && item.submenu && !isCollapsed && (
+          <div className="mt-1 ml-4 space-y-1 relative">
+            <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-gray-100" />
+
+            {item.submenu
+              .filter((subItem) => {
+                const superAdminOnlyPaths = [
+                  "/page/admin/tambah-admin",
+                  "/page/admin/tambah-admin/sheets",
+                  "/page/admin/tambah-admin/excel",
+                  "/page/admin/edit-admin",
+                ];
+                if (
+                  superAdminOnlyPaths.includes(subItem.href) &&
+                  !isSuperAdmin
+                ) {
+                  return false;
+                }
+                return true;
+              })
+              .map((subItem, index) => {
+                const isTabActive =
+                  "queryParam" in subItem &&
+                  searchParams.get("tab") ===
+                    (subItem as { queryParam?: string }).queryParam;
+
+                const pureHref = subItem.href.split("?")[0];
+                const subActive =
+                  isTabActive ||
+                  (!searchParams.get("tab") && pathname === pureHref) ||
+                  (pathname?.startsWith(pureHref + "/") &&
+                    !item.submenu?.some(
+                      (other) =>
+                        other.href.length > subItem.href.length &&
+                        (pathname === other.href.split("?")[0] ||
+                          pathname?.startsWith(other.href.split("?")[0] + "/")),
+                    ));
+
+                // Quick fix for default "bangun" tab if tab is empty but path is /page/admin/kegiatan
+                const finalSubActive =
+                  subActive ||
+                  (!searchParams.get("tab") &&
+                    pathname === "/page/admin/kegiatan" &&
+                    subItem.label === "Bangun Pagi");
+
+                return (
+                  <Link
+                    key={index}
+                    href={subItem.href}
+                    className={`block pl-6 pr-4 py-2.5 text-sm rounded-r-xl transition-all duration-200 border-l-2 ${
+                      finalSubActive
+                        ? "border-[var(--secondary)] text-[var(--secondary)] font-semibold bg-[var(--secondary)]/5"
+                        : "border-transparent text-gray-500 hover:text-[var(--secondary)] hover:bg-gray-50"
+                    }`}
+                  >
+                    {subItem.label}
+                  </Link>
+                );
+              })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {isMobileOpen && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden" />
+      )}
+
+      <aside
+        id="mobile-sidebar"
+        className={`fixed md:sticky top-0 h-screen flex flex-col justify-between bg-white border-r border-gray-100 transition-all duration-300 ease-in-out z-50 
+          ${isCollapsed ? "w-20 px-3" : "w-72 px-6"} py-8
+          ${isMobileOpen ? "left-0 shadow-2xl" : "-left-72 md:left-0"}
+          `}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="flex flex-col h-full overflow-y-auto overflow-x-hidden scrollbar-none">
+          {isMobileOpen && (
+            <button
+              onClick={onMobileClose}
+              className="absolute top-4 right-4 p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors md:hidden"
+              aria-label="Close sidebar"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          )}
+
+          <div
+            className={`flex items-center justify-center mb-10 ${
+              isMobileOpen ? "mt-8" : ""
+            }`}
+          >
+            <Link
+              href="/page/admin"
+              className="transition-transform duration-200 hover:scale-105"
+            >
+              {!isCollapsed ? (
+                <div className="relative w-32 h-32">
+                  <Image
+                    src="/assets/img/7kaih.png"
+                    alt="Anak Hebat"
+                    fill
+                    sizes="128px"
+                    className="object-contain drop-shadow-sm"
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="relative w-12 h-12">
+                  <Image
+                    src="/assets/img/7kaih.png"
+                    alt="Anak Hebat"
+                    fill
+                    sizes="48px"
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              )}
+            </Link>
+          </div>
+
+          {/* Navigation Section */}
+          <div className="flex-1 space-y-2">
+            {!isCollapsed && (
+              <p className="text-gray-400 text-[11px] uppercase tracking-wider font-bold px-4 mb-4">
+                Admin Menu
+              </p>
+            )}
+            <nav className="space-y-1.5">{menuItems.map(renderMenuItem)}</nav>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}

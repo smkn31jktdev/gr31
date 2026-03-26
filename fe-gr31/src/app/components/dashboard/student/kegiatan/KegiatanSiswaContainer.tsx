@@ -1,0 +1,800 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import StudentSidebar from "@/app/components/dashboard/student/sidebar";
+import StudentNavbar from "@/app/components/dashboard/student/navbar";
+import { DatePicker } from "@/app/components/ui/DatePicker";
+import { Calendar, Users } from "lucide-react";
+
+import {
+  BangunSection,
+  TidurSection,
+  IbadahSection,
+  MakanSection,
+  OlahragaSection,
+  BelajarSection,
+  BermasyarakatSection,
+  KehadiranSection,
+} from "@/app/components/dashboard/student/kegiatan";
+import type { KehadiranData } from "@/app/components/dashboard/student/kegiatan";
+
+// Import types and constants from const folder
+import {
+  BeribadahForm,
+  BERIBADAH_BOOLEAN_FIELDS,
+  createDefaultBeribadah,
+} from "@/app/components/dashboard/student/const/ibadah";
+import {
+  RamadhanForm,
+  RAMADHAN_BOOLEAN_FIELDS,
+  createDefaultRamadhan,
+  isRamadhanPeriod,
+} from "@/app/components/dashboard/student/const/ramadhan/ramadhan";
+import {
+  buildDeviceLockMessage,
+  getDeviceAttendanceLockStatus,
+  setDeviceAttendanceRecord,
+} from "@/lib/utils/device-attendance-lock";
+
+interface StudentData {
+  nama: string;
+  nisn: string;
+  kelas: string;
+}
+
+function getCurrentLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export default function KegiatanSiswaContainer() {
+  const router = useRouter();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [studentData, setStudentData] = useState<StudentData>({
+    nama: "",
+    nisn: "",
+    kelas: "",
+  });
+
+  const [snackbar, setSnackbar] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [deviceLockMessage, setDeviceLockMessage] = useState<string | null>(
+    null,
+  );
+
+  // Form state
+  const [formData, setFormData] = useState({
+    tanggal: getCurrentLocalDate(),
+    nama: "",
+    nisn: "",
+    kelas: "",
+    bangunPagi: {
+      jam: "",
+      membacaDanBangunTidur: false,
+    },
+    tidur: {
+      jam: "",
+      membacaDanMasTidur: false,
+    },
+    beribadah: createDefaultBeribadah(),
+    ramadhan: createDefaultRamadhan(),
+    makanSehat: {
+      jenisMakanan: "",
+      jenisLaukSayur: "",
+      makanSayurAtauBuah: false,
+      minumSuplemen: false,
+    },
+    olahraga: {
+      jenisOlahraga: "",
+      deskripsi: "",
+      waktu: "",
+    },
+    bermasyarakat: {
+      deskripsi: "",
+      tempat: "",
+      waktu: "",
+      paraf: false,
+    },
+    belajar: {
+      yaAtauTidak: false,
+      deskripsi: "",
+    },
+    kehadiran: {
+      status: "belum",
+      waktuAbsen: "",
+      hari: "",
+      alasanTidakHadir: "",
+      koordinat: null,
+      jarak: null,
+      akurasi: null,
+      verifiedAt: "",
+    } as KehadiranData,
+  });
+
+  useEffect(() => {
+    fetchStudentData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (snackbar) {
+      setSnackbarVisible(true);
+      const hideTimer = setTimeout(() => {
+        setSnackbarVisible(false);
+      }, 3000);
+      return () => clearTimeout(hideTimer);
+    }
+  }, [snackbar]);
+
+  useEffect(() => {
+    if (formData.tanggal && studentData.nisn) {
+      fetchKegiatanByDate(formData.tanggal);
+    }
+  }, [formData.tanggal, studentData.nisn]);
+
+  useEffect(() => {
+    if (!formData.tanggal || !studentData.nisn) {
+      setDeviceLockMessage(null);
+      return;
+    }
+
+    const lockStatus = getDeviceAttendanceLockStatus(
+      formData.tanggal,
+      studentData.nisn,
+    );
+
+    if (lockStatus.isLocked && lockStatus.record) {
+      setDeviceLockMessage(buildDeviceLockMessage(lockStatus.record));
+      return;
+    }
+
+    setDeviceLockMessage(null);
+  }, [formData.tanggal, studentData.nisn]);
+
+  const getAuthHeaders = (): HeadersInit => {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("studentToken")
+        : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const getJsonHeaders = (): HeadersInit => {
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("studentToken")
+        : null;
+    return token
+      ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+      : { "Content-Type": "application/json" };
+  };
+
+  const fetchStudentData = async () => {
+    try {
+      const response = await fetch("/api/auth/student/me", {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.error("Token invalid/expired, redirecting to login");
+          localStorage.removeItem("studentToken");
+          localStorage.removeItem("studentUser");
+          window.location.href = "/page/login/siswa?expired=1";
+          return;
+        }
+        throw new Error("Failed to fetch student data");
+      }
+
+      const data = await response.json();
+      setStudentData({
+        nama: data.student.nama,
+        nisn: data.student.nisn,
+        kelas: data.student.kelas,
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        nama: data.student.nama,
+        nisn: data.student.nisn,
+        kelas: data.student.kelas,
+      }));
+    } catch (error) {
+      console.error("Error fetching student data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchKegiatanByDate = async (tanggal: string) => {
+    try {
+      const response = await fetch(`/api/student/kegiatan?tanggal=${tanggal}`, {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+
+      if (data.kegiatan) {
+        const kegiatan = { ...data.kegiatan } as Record<string, unknown>;
+        delete kegiatan["_id"];
+
+        if (kegiatan.olahraga && typeof kegiatan.olahraga === "object") {
+          const o = { ...(kegiatan.olahraga as Record<string, unknown>) };
+          const normalizedOlahraga = {
+            jenisOlahraga: o.jenisOlahraga || "",
+            deskripsi: o.deskripsi || "",
+            waktu: o.waktu || "",
+          };
+          kegiatan["olahraga"] = normalizedOlahraga;
+        }
+
+        const existingBeribadah = kegiatan.beribadah as
+          | Partial<BeribadahForm>
+          | undefined;
+        const normalizedBeribadah = createDefaultBeribadah();
+        if (existingBeribadah) {
+          BERIBADAH_BOOLEAN_FIELDS.forEach(({ key }) => {
+            normalizedBeribadah[key] = Boolean(existingBeribadah[key]);
+          });
+          if (existingBeribadah.zakatInfaqSedekah !== undefined) {
+            normalizedBeribadah.zakatInfaqSedekah = String(
+              existingBeribadah.zakatInfaqSedekah ?? "",
+            );
+          }
+        }
+        kegiatan["beribadah"] = normalizedBeribadah;
+
+        // Normalize ramadhan data
+        const existingRamadhan = kegiatan.ramadhan as
+          | Partial<RamadhanForm>
+          | undefined;
+        const normalizedRamadhan = createDefaultRamadhan();
+        if (existingRamadhan) {
+          RAMADHAN_BOOLEAN_FIELDS.forEach(({ key }) => {
+            normalizedRamadhan[key] = Boolean(existingRamadhan[key]);
+          });
+        }
+        kegiatan["ramadhan"] = normalizedRamadhan;
+
+        // Normalize makanSehat data
+        if (kegiatan.makanSehat && typeof kegiatan.makanSehat === "object") {
+          const m = { ...(kegiatan.makanSehat as Record<string, unknown>) };
+          const normalizedMakanSehat = {
+            jenisMakanan: m.jenisMakanan || "",
+            jenisLaukSayur: m.jenisLaukSayur || "",
+            makanSayurAtauBuah: Boolean(m.makanSayurAtauBuah),
+            minumSuplemen: Boolean(m.minumSuplemen),
+          };
+          kegiatan["makanSehat"] = normalizedMakanSehat;
+        }
+
+        // Normalize kehadiran data
+        if (kegiatan.kehadiran && typeof kegiatan.kehadiran === "object") {
+          const k = { ...(kegiatan.kehadiran as Record<string, unknown>) };
+          const normalizedKehadiran = {
+            status: (k.status as string) || "belum",
+            waktuAbsen: (k.waktuAbsen as string) || "",
+            hari: (k.hari as string) || "",
+            alasanTidakHadir: (k.alasanTidakHadir as string) || "",
+            koordinat: k.koordinat || null,
+            jarak: k.jarak !== undefined ? k.jarak : null,
+            akurasi: k.akurasi !== undefined ? k.akurasi : null,
+            verifiedAt: (k.verifiedAt as string) || "",
+          };
+          kegiatan["kehadiran"] = normalizedKehadiran;
+        }
+
+        // Normalize bermasyarakat data
+        if (
+          kegiatan.bermasyarakat &&
+          typeof kegiatan.bermasyarakat === "object"
+        ) {
+          const b = { ...(kegiatan.bermasyarakat as Record<string, unknown>) };
+          const normalizedBermasyarakat = {
+            deskripsi: b.deskripsi || "",
+            tempat: b.tempat || "",
+            waktu: b.waktu || "",
+            paraf: Boolean(b.paraf),
+          };
+          kegiatan["bermasyarakat"] = normalizedBermasyarakat;
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          ...(kegiatan as Record<string, unknown>),
+        }));
+      }
+      // Also fetch kehadiran from dedicated collection
+      try {
+        const kehadiranResponse = await fetch(
+          `/api/student/kehadiran?tanggal=${tanggal}`,
+          {
+            headers: getAuthHeaders(),
+            credentials: "include",
+          },
+        );
+
+        if (kehadiranResponse.ok) {
+          const kehadiranResult = await kehadiranResponse.json();
+          if (kehadiranResult.kehadiran) {
+            const kh = kehadiranResult.kehadiran;
+
+            if (
+              studentData.nisn &&
+              (kh.status === "hadir" || kh.status === "tidak_hadir")
+            ) {
+              setDeviceAttendanceRecord({
+                tanggal,
+                ownerNisn: studentData.nisn,
+                ownerName: studentData.nama || formData.nama || "Siswa",
+                status: kh.status,
+                verifiedAt: kh.verifiedAt || new Date().toISOString(),
+              });
+            }
+
+            setFormData((prev) => ({
+              ...prev,
+              kehadiran: {
+                status: kh.status || "belum",
+                waktuAbsen: kh.waktuAbsen || "",
+                hari: kh.hari || "",
+                alasanTidakHadir: kh.alasanTidakHadir || "",
+                koordinat: kh.koordinat || null,
+                jarak: kh.jarak !== undefined ? kh.jarak : null,
+                akurasi: kh.akurasi !== undefined ? kh.akurasi : null,
+                verifiedAt: kh.verifiedAt || "",
+              },
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching kehadiran:", err);
+      }
+    } catch (error) {
+      console.error("Error fetching kegiatan:", error);
+    }
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const closeMobileSidebar = () => {
+    setIsMobileSidebarOpen(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const sectionsToSave: Array<[string, Record<string, unknown>]> = [
+        ["bangunPagi", formData.bangunPagi as Record<string, unknown>],
+        ["tidur", formData.tidur as Record<string, unknown>],
+        ["beribadah", formData.beribadah as Record<string, unknown>],
+        ["makanSehat", formData.makanSehat as Record<string, unknown>],
+        ["olahraga", formData.olahraga as Record<string, unknown>],
+        ["belajar", formData.belajar as Record<string, unknown>],
+        ["bermasyarakat", formData.bermasyarakat as Record<string, unknown>],
+      ];
+
+      if (isRamadhanPeriod(formData.tanggal)) {
+        sectionsToSave.push([
+          "ramadhan",
+          formData.ramadhan as Record<string, unknown>,
+        ]);
+      }
+
+      for (const [section, sectionData] of sectionsToSave) {
+        const payloadSectionData = JSON.parse(
+          JSON.stringify(sectionData),
+        ) as Record<string, unknown>;
+        delete payloadSectionData["_id"];
+
+        const response = await fetch("/api/student/kegiatan", {
+          method: "POST",
+          headers: getJsonHeaders(),
+          credentials: "include",
+          body: JSON.stringify({
+            tanggal: formData.tanggal,
+            section,
+            data: payloadSectionData,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Gagal menyimpan data");
+        }
+      }
+
+      setSnackbar({
+        message: "Data kegiatan berhasil disimpan",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("Error saving kegiatan:", error);
+      setSnackbar({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Gagal menyimpan data kegiatan",
+        type: "error",
+      });
+    }
+  };
+
+  const handleSectionSubmit = async (
+    section: string,
+    sectionData: Record<string, unknown>,
+  ) => {
+    try {
+      const payloadSectionData = JSON.parse(
+        JSON.stringify(sectionData),
+      ) as Record<string, unknown>;
+      delete payloadSectionData["_id"];
+
+      const response = await fetch("/api/student/kegiatan", {
+        method: "POST",
+        headers: getJsonHeaders(),
+        credentials: "include",
+        body: JSON.stringify({
+          section,
+          tanggal: formData.tanggal,
+          data: payloadSectionData,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menyimpan data");
+      }
+
+      setSnackbar({
+        message: data.message,
+        type: "success",
+      });
+
+      fetchKegiatanByDate(formData.tanggal);
+    } catch (error) {
+      console.error(`Error saving ${section}:`, error);
+      setSnackbar({
+        message:
+          error instanceof Error
+            ? error.message
+            : `Gagal menyimpan data ${section}`,
+        type: "error",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 text-gray-400">
+        <span className="loading loading-spinner loading-lg"></span> Loading...
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-gray-50 font-poppins text-gray-800">
+      <StudentSidebar
+        isCollapsed={isSidebarCollapsed}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={closeMobileSidebar}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <StudentNavbar
+          onToggleSidebar={toggleSidebar}
+          onToggleMobileSidebar={toggleMobileSidebar}
+        />
+
+        <main className="flex-1 overflow-auto bg-gray-50/50">
+          <div className="w-full px-3 sm:px-4 lg:px-6 py-6 md:py-8">
+            {/* Header */}
+            <div className="mb-8 md:mb-12 text-center md:text-left">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight mb-3">
+                Kegiatan Harian
+              </h1>
+              <p className="text-gray-500 text-sm sm:text-base max-w-2xl mx-auto md:mx-0 leading-relaxed">
+                Catat aktivitas positifmu setiap hari untuk membangun kebiasaan
+                baik dan mendapatkan poin prestasi.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* --- Row 1: Left Col (Date & Kehadiran) & Right Col (Info, Bangun, Tidur) --- */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {/* Left Column: Date & Kehadiran */}
+                <div className="flex flex-col gap-6 lg:col-span-1 border-none">
+                  {/* Date Picker */}
+                  <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
+                    <label className="block text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-[var(--secondary)]" />
+                      Pilih Tanggal
+                    </label>
+                    <DatePicker
+                      value={formData.tanggal}
+                      disabled={true}
+                      onChange={(value: string) => {
+                        localStorage.setItem("selectedTanggal", value);
+                        setFormData((prev) => ({ ...prev, tanggal: value }));
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <KehadiranSection
+                      data={formData.kehadiran}
+                      onChange={(data: KehadiranData) =>
+                        setFormData((prev) => ({ ...prev, kehadiran: data }))
+                      }
+                      onSave={async (data: KehadiranData) => {
+                        try {
+                          const lockStatus = getDeviceAttendanceLockStatus(
+                            formData.tanggal,
+                            studentData.nisn,
+                          );
+
+                          if (lockStatus.isLocked && lockStatus.record) {
+                            throw new Error(
+                              buildDeviceLockMessage(lockStatus.record),
+                            );
+                          }
+
+                          const response = await fetch(
+                            "/api/student/kehadiran",
+                            {
+                              method: "POST",
+                              headers: getJsonHeaders(),
+                              credentials: "include",
+                              body: JSON.stringify({
+                                tanggal: formData.tanggal,
+                                kehadiran: data,
+                              }),
+                            },
+                          );
+
+                          const result = await response.json();
+                          if (!response.ok) {
+                            throw new Error(
+                              result.error || "Gagal menyimpan kehadiran",
+                            );
+                          }
+
+                          if (
+                            data.status === "hadir" ||
+                            data.status === "tidak_hadir"
+                          ) {
+                            setDeviceAttendanceRecord({
+                              tanggal: formData.tanggal,
+                              ownerNisn: studentData.nisn,
+                              ownerName:
+                                studentData.nama || formData.nama || "Siswa",
+                              status: data.status,
+                              verifiedAt:
+                                data.verifiedAt || new Date().toISOString(),
+                            });
+                          }
+
+                          setSnackbar({
+                            message: result.message,
+                            type: "success",
+                          });
+
+                          handleSectionSubmit(
+                            "kehadiran",
+                            data as unknown as Record<string, unknown>,
+                          );
+
+                          setDeviceLockMessage(null);
+                        } catch (error) {
+                          console.error("Error saving kehadiran:", error);
+                          setSnackbar({
+                            message:
+                              error instanceof Error
+                                ? error.message
+                                : "Gagal menyimpan data kehadiran",
+                            type: "error",
+                          });
+                        }
+                      }}
+                      deviceLockInfo={
+                        deviceLockMessage
+                          ? {
+                              isLocked: true,
+                              message: deviceLockMessage,
+                            }
+                          : undefined
+                      }
+                      tanggal={formData.tanggal}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-6 lg:col-span-2 xl:col-span-3">
+                  <div className="bg-[var(--secondary)]/5 rounded-3xl p-6 border border-[var(--secondary)]/10 flex flex-col xl:flex-row xl:items-center justify-between gap-6 relative overflow-hidden">
+                    <div className="absolute right-[-20px] top-[-20px] text-[var(--secondary)]/5 pointer-events-none">
+                      <Users className="w-32 h-32" />
+                    </div>
+
+                    <div className="flex items-center gap-3 relative z-10 w-full xl:w-1/4">
+                      <div className="p-2.5 bg-white rounded-xl shadow-sm border border-white/50 text-[var(--secondary)] backdrop-blur-sm">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <h3 className="text-sm font-bold text-[var(--secondary)] uppercase tracking-wider whitespace-nowrap">
+                        Data Siswa
+                      </h3>
+                    </div>
+
+                    <div className="flex-1 flex flex-col xl:flex-row xl:items-center w-full justify-between xl:justify-end gap-5 xl:gap-12 text-sm relative z-10">
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">
+                          Nama Siswa
+                        </span>
+                        <span className="font-bold text-gray-800 text-base md:text-lg">
+                          {formData.nama || "-"}
+                        </span>
+                      </div>
+                      <div className="hidden xl:block w-px h-10 bg-[var(--secondary)]/20 shadow-sm"></div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">
+                          NISN
+                        </span>
+                        <span className="font-bold text-gray-800 text-base md:text-lg font-mono tracking-tight">
+                          {formData.nisn || "-"}
+                        </span>
+                      </div>
+                      <div className="hidden xl:block w-px h-10 bg-[var(--secondary)]/20 shadow-sm"></div>
+                      <div className="flex flex-col">
+                        <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">
+                          Kelas
+                        </span>
+                        <span className="font-bold text-emerald-600 text-base md:text-lg bg-emerald-50 px-3 py-0.5 rounded-lg w-max border border-emerald-100">
+                          {formData.kelas || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
+                    <BangunSection
+                      data={formData.bangunPagi}
+                      onChange={(data) =>
+                        setFormData((prev) => ({ ...prev, bangunPagi: data }))
+                      }
+                      onSave={() =>
+                        handleSectionSubmit("bangunPagi", formData.bangunPagi)
+                      }
+                    />
+
+                    {/* Card 4: Tidur Malam */}
+                    <TidurSection
+                      data={formData.tidur}
+                      onChange={(data) =>
+                        setFormData((prev) => ({ ...prev, tidur: data }))
+                      }
+                      onSave={() =>
+                        handleSectionSubmit("tidur", formData.tidur)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <IbadahSection
+                data={formData.beribadah}
+                ramadhanData={formData.ramadhan}
+                currentDate={formData.tanggal}
+                onChange={(data) =>
+                  setFormData((prev) => ({ ...prev, beribadah: data }))
+                }
+                onRamadhanChange={(data) =>
+                  setFormData((prev) => ({ ...prev, ramadhan: data }))
+                }
+                onSave={async () => {
+                  await handleSectionSubmit("beribadah", formData.beribadah);
+                  // If during Ramadhan, also save ramadhan data (stored in same kegiatan document)
+                  if (isRamadhanPeriod(formData.tanggal)) {
+                    await handleSectionSubmit("ramadhan", formData.ramadhan);
+                  }
+                }}
+              />
+
+              {/* --- Row 3: Makan, Olahraga, Belajar --- */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Makan Sehat */}
+                <MakanSection
+                  data={formData.makanSehat}
+                  onChange={(data) =>
+                    setFormData((prev) => ({ ...prev, makanSehat: data }))
+                  }
+                  onSave={() =>
+                    handleSectionSubmit("makanSehat", formData.makanSehat)
+                  }
+                />
+
+                {/* Olahraga */}
+                <OlahragaSection
+                  data={formData.olahraga}
+                  onChange={(data) =>
+                    setFormData((prev) => ({ ...prev, olahraga: data }))
+                  }
+                  onSave={() =>
+                    handleSectionSubmit("olahraga", formData.olahraga)
+                  }
+                />
+
+                {/* Belajar */}
+                <BelajarSection
+                  data={formData.belajar}
+                  onChange={(data) =>
+                    setFormData((prev) => ({ ...prev, belajar: data }))
+                  }
+                  onSave={() =>
+                    handleSectionSubmit("belajar", formData.belajar)
+                  }
+                />
+              </div>
+
+              {/* --- Row 4: Bermasyarakat (Full Width) --- */}
+              <BermasyarakatSection
+                data={formData.bermasyarakat}
+                onChange={(data) =>
+                  setFormData((prev) => ({ ...prev, bermasyarakat: data }))
+                }
+                onSave={() =>
+                  handleSectionSubmit("bermasyarakat", formData.bermasyarakat)
+                }
+              />
+            </form>
+          </div>
+        </main>
+      </div>
+
+      {/* Snackbar Notification */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 transform transition-all duration-300 z-[100] ${
+          snackbarVisible
+            ? "translate-y-0 opacity-100"
+            : "translate-y-6 opacity-0"
+        }`}
+      >
+        {snackbar && (
+          <div
+            className={`px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 border ${
+              snackbar.type === "success"
+                ? "bg-white text-emerald-600 border-emerald-100"
+                : "bg-white text-rose-600 border-rose-100"
+            }`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${
+                snackbar.type === "success" ? "bg-emerald-500" : "bg-rose-500"
+              }`}
+            />
+            <span className="font-medium text-sm text-gray-800">
+              {snackbar.message}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

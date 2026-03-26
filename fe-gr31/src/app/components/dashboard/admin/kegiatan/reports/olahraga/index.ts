@@ -1,0 +1,1 @@
+export { downloadOlahragaStyledPdf } from "./olahragaReport";

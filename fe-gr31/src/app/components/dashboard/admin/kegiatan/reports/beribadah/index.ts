@@ -1,0 +1,1 @@
+export { downloadIbadahStyledPdf } from "./ibadahReport";
