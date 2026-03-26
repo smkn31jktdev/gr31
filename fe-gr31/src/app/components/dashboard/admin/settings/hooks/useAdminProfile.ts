@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { baseUrl } from "@/core/config";
 import type { MessageState } from "../types";
 
 function resolvePhotoUrl(url?: string | null): string | null {
   if (!url) return null;
   if (/^https?:\/\//i.test(url)) return url;
-  return `${baseUrl}${url.startsWith("/") ? url : `/${url}`}`;
+  // Gunakan proxy Next.js untuk uploads
+  if (url.startsWith("/uploads/")) return `/api${url}`;
+  return url.startsWith("/") ? `/api${url}` : `/api/${url}`;
 }
 
 export function useAdminProfile() {

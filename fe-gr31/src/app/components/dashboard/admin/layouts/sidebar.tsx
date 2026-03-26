@@ -218,6 +218,7 @@ export default function AdminSidebar({
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("adminToken");
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSuperAdmin(false);
       return;
     }
