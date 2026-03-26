@@ -372,5 +372,4 @@ Untuk pertanyaan dan dukungan, hubungi tim development SMKN 31 Jakarta.
 
 ---
 
-**Made with ❤️ for SMKN 31 Jakarta**
 **© 2026 SMKN 31 Jakarta. All Rights Reserved.**

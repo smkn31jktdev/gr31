@@ -260,7 +260,10 @@ retry -d 0 -t 100 -u fail -- go test -coverprofile=coverage.profile -cover ./int
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under a Proprietary License - see the [LICENSE](LICENSE) file for details.
+
+**IMPORTANT**: This software is proprietary and exclusively owned by SMKN 31 Jakarta.
+Unauthorized use, reproduction, or distribution is strictly prohibited.
 
 ## Author
 
@@ -268,3 +271,5 @@ Alvin (Utaaa)
 
 - GitHub: [@tsubametaa](https://github.com/tsubametaa)
 - Website: [www.utaaa.my.id](https://www.utaaa.my.id)
+
+**© 2026 SMKN 31 Jakarta. All Rights Reserved.**
